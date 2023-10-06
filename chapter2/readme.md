@@ -118,4 +118,105 @@ print(tabulate(df.head(5),headers='keys',tablefmt='psql'))
   ```
 
 - Stemming 
-- 
+  詞幹提取是將單字轉換為其詞根的過程。 詞幹擷取的好處在於，如果單字的基本意義相同，則可以保持單字的一致性。
+  ```python
+  from nltk.stem import PorterStemmer
+  # porter stemmer for stemming word tokens 
+  ps = PorterStemmer()
+  word = 'information'
+  stemmed_word = ps.stem(word) // 'inform'
+
+  ```
+
+## Extracting features from data 
+特徵提取（特徵工程）是將資料轉換為特徵的過程，這些特徵以特定的方式表達目標任務的底層資訊。
+
+
+要求您利用特定於任務的領域知識。 在本節中，我們將介紹
+流行的特徵提取技術，包括文字資料的詞袋、術語頻率逆
+文件頻率、將彩色影像轉換為灰階影像、序數編碼、one-hot 編碼、
+降維和比較兩個字串的模糊匹配。
+
+### Converting text using bag-of-words
+**Bag-of-words(BoW)** 詞袋模型，是文件的表示，描述文件中一組單字的出現（詞頻）。
+
+BoW只考慮單字的出現，忽略單字在文件中的順序或單字的結構
+
+```python
+import pandas as pd 
+from sklearn.feature_extraction.text import CountVectorizer
+document_1 = "This is a great place to do holiday shopping"
+document_2 = "This is a good place to eat food"
+document_3 = "One of the best place to relax is home"
+count_vector = CountVectorizer(ngram_range = (1,1),stop_words = 'english')
+# transform from the sentences 
+count_fit = count_vector.fit_transform([document_1,document_2,document_3])
+# create dataframe 
+df = pd.DataFrame(count_fit.toarray(),columns =count_vector.get_feature_names_cut())
+print(tabulate(df, headers="keys", tablefmt="psql"))
+```
+
+### Applying term frequency-inverse document frequency (TF_IDF) transformation
+使用詞頻的問題是頻率較高的文件將主導模型或分析。 因此，最好根據單字在所有文件中出現的頻率來重新調整頻率。 這種縮放有助於以文本的數字表示更好地表達上下文的方式來懲罰那些高頻詞（例如 the 和 have）。
+
+
+在介紹TF-IDF的公式之前，我們必須先定義一些符號。 設 n 為總數
+文件且 t 是一個單字（術語）。 `df(t)` 指的是單字 t 的文檔頻率（有多少個文件中包含單字 t），而 `tf(t, d)` 指的是單字 t 在文件 d 的頻率（t 在文件 d 中出現的次數）。 透過這些定義，我們可以定義 idf(t)，即逆文檔
+頻率，為 `log [ n / df(t) ] + 1`。
+```python
+tfidf_vectorizer = TfidfVectorizer(use_idf=True)
+# use the tf-idf instance to fit list of research_interest 
+tfidf = tfidf_vectorizer.fit_transform(research_interest_list)
+df = pd.DataFrame(tfidf[0].T.todense(),index=tfidf_vectorizer.get_feature_names_out(),columns = ['tf-idf'])
+
+df = df.sort_values('tf-idf',ascending=False)
+print(df.head())
+
+```
+
+### Creating one-hot encoding (one of k)
+One-hot 編碼（one-of-k）是將離散值轉換為二進位值序列的過程。
+```python
+from sklearn.preprocessing import LabelEncoder 
+labelencoder = LabelEncoder()
+encoded_data = labelencoder.fit_transfrom(df_research['is_atificial_intelligent'])
+```
+
+### Creating ordinal encoding 
+序數編碼是將分類值轉換為數值的過程。 
+```python
+from sklearn.preprocessing import LabelEncoder 
+labelencoder = LabelEncoder()
+encoded_data = labelencoder.fit_transforms(df_research['research_interest'])
+
+```
+
+
+### Converting a colored image into a grayscale image 
+```python
+image = cv2.imread(file)
+gray_image  = cv2.cvtColor(image,cv2.COLOR_BGR2GRAY)
+```
+
+### Performing dimensionality reduction
+在許多情況下，功能超越了任務的需要； 並非所有功能都有有用的信息。
+
+
+在這種情況下，您可以使用降維技術，例如主成分分析(PCA)、奇異值分解(SVD)、線性判別分析(LDA)、t-SNE、UMAP 和 ISOMAP 等等。 另一種選擇是使用深度學習。
+
+如果我們更正式地描述 PCA 過程，我們可以說該過程有兩個步驟：
+1. 建構一個協方差矩陣，表示每對特徵的相關性。
+2. 產生一組新的特徵，透過計算協方差矩陣的特徵值來捕捉不同量的資訊。
+
+```python
+import matplotlib.pyplot as plt 
+import numpy as np 
+import pandas as pd 
+from sklearn.decomposition import PCA 
+from sklearn.preprocessing import StandardScaler 
+file = '.csv'
+df_features = pd.read_csv(file)
+scaler = StandardScaler()
+X_std = scaler.fit_transform(X)
+
+```
