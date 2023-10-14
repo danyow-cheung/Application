@@ -241,4 +241,21 @@ fuzz.ratio("this is a test!","this is a test!") //100
 > visualize_matplotlib.py
 
 
-## Drawing statistical graphs using Seaborn
+###  Drawing statistical graphs using Seaborn
+```python
+import seaborn as sns 
+# top10 states by largest mean 
+df_mean_sorted_top10 = ... # 
+# LINEAR CHART PLOT
+sns.lineplot(data=df_mean_sorted_top10,x='state_names',y='count_vaccine')
+# show the actual plot 
+plt.show()
+# histogram chart plotting 
+sns.displot(df_mean_sorted_top10['count_vaccine'],kde=False)
+plt.show()
+```
+
+
+## Introduction to Docker
+### Introduction to Dockerfiles
+### Building a custom Docker image
