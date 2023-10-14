@@ -218,5 +218,27 @@ file = '.csv'
 df_features = pd.read_csv(file)
 scaler = StandardScaler()
 X_std = scaler.fit_transform(X)
+pca  = PCA(0.95).fit(X_std)
 
 ```
+
+### Applying fuzzy matching to handle similarity between strings 
+模糊匹配（https://pypi.org/project/fuzzywuzzy/）使用距离度量来测量两个序列之间的差异，如果可以认为它们相似，则同等对待它们。
+使用编辑距离来作为参数变量
+```python
+from fuzzywuzzy import fuzz 
+# compare strings using ratio method
+fuzz.ratio('this is a test','this is a test!') // 91 
+fuzz.ratio("this is a test!","this is a test!") //100
+
+```
+
+## Performing data visualization
+一般使用`matplotlib`和`seaborn`
+
+### Performing  basic visualization using Matplotlib
+我们将演示如何使用 Matplotlib 生成条形图和饼图。
+> visualize_matplotlib.py
+
+
+## Drawing statistical graphs using Seaborn
