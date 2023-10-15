@@ -306,3 +306,173 @@ optimizer = torch.optim.Adam(model.parameters(), lr=0.1)
 ```
 
 ## Implementing and training a model in TF 
+PyTorch 面向研究项目，而 TF 更注重行业使用
+案例。 虽然 PyTorch、Torch Serve 和 Torch Mobile 的部署功能仍处于实验阶段，但 TF、TF Serve 和 TF Lite 的部署功能稳定且正在积极使用。 TF 的第一个版本由 Google Brain 团队于 2011 年推出，他们一直在不断更新 TF，使其更加灵活、用户友好和高效。
+
+TF 和 PyTorch 之间的主要区别最初要大得多，因为 TF 的第一个版本使用静态图。 然而，这种情况在版本 2 中发生了变化，因为它引入了急切执行，模仿 PyTorch 中已知的动态图。 TF 版本 2 通常与 Keras 一起使用，Keras 是 ANN 的接口 (https://keras.io)。 Keras 允许用户快速开发深度学习模型并运行实验。 在以下部分中，我们将引导您了解 TF 的关键组件。
+
+### TF data loading logic 
+```python
+import tensorflow_datasets as tfds 
+class DataLoader:
+    @staticmethod
+    def load_data(config):
+        return tfds.load(config.data_url)
+
+```
+另外一种方法
+```python
+import tensorflow as tf 
+dataset = tf.data.TFRecordDataset(list_of_files)
+dataset = tf.data.Dataset.from_tensor_slices((df_features.values,df_target.values))
+def data_generator(images,labels):
+    def fetch_example():
+        i = 0 
+        while True:
+            example = (images[i],labels[i])
+            i +=1 
+            i%= len(labels)
+            yield example 
+        return fetch_examples 
+training_dataset = tf.data.Dataset.from_generator(
+    data_generator(images,labels),
+    output_types = (tf.float32,tf.int32),
+    output_shapes = (tf.TensorShape(features_shape),tf.TensorShape(labels_shape))
+)
+
+```
+### TF model definition
+与 PyTorch 和 PL 处理模型定义的方式类似，TF 提供了多种定义网络架构的方法。 首先，我们将了解 Keras.Sequential，它链接一组层来构建网络。 此类为您处理链接，以便您无需显式定义层之间的链接：
+```python
+import tensorflow as tf 
+from tensorflow import keras 
+from tensorflow.keras import layers 
+input_shape = 50 
+model = keras.Sequential(
+    [
+        keras.Input(shape=input_shape),
+        layers.Dense(128,activation='relu',name='layer1'),
+        layers.Dense(64,activation='relu',name='layer2'),
+        layers.Dense(1,activation='sigmoid',name='layer3'),
+    ]
+)
+```
+在前面的示例中，我们创建的模型由一个输入层、两个密集层和一个生成单个神经元作为输出的输出层组成。 这是一个可用于二元分类的简单模型。
+
+如果模型定义比较复杂，无法按顺序构建，另一种选择是使用 keras.Model 类，如以下代码片段所示：
+```python
+num_classes = 5 
+input_1 = layers.Input(50)
+input_2 = layers.Input(10)
+x_1 = layers.Dense(128,activation='relu',name='layer1x')(input_1)
+x_1 = layers.Dense(64,activation='relu',name='layer1_2x')(x_1)
+x_2 = layers.Dense(128,activation='relu',name='layers2x')(input_2)
+x_2 = layers.Dense(64,activation='relu',name='layer2_1x')(x_2)
+x = layers.concatenate([x_1,x_2],name='concatenate')
+out = layers.Dense(num_classess,activation='softmax',name='output')(x)
+model = keras.Model((input_1,input_2),out)
+```
+在此示例中，我们有两个输入以及一组不同的计算。 两条路径在最后一个串联层中合并，将串联张量传输到具有五个神经元的最终密集层。 鉴于最后一层使用softmax激活，该模型可以用于多类分类。
+
+
+第三个选项如下，是创建一个继承keras.Model的类。 此选项为您提供最大的灵活性，因为它允许您自定义模型的每个部分和训练过程：
+
+```python
+class SimpleANN(keras.Model):
+    def __init__(self):
+        super().__init__()
+        self.dense_1 = layers.Dense(128,activation='relu',name='layer1')
+        self.dense_2 = layers.Dense(64,activation='relu',name='layer2')
+        self.out = layers.Dense(1, activation="sigmoid",name="output")
+    def call(self,inputs):
+        x  = self.dense_1(inputs)
+        x = self.dense_3(x)
+        return self.out(x)
+    def build_graph(self,raw_shape):
+        x = tf.keras.layers.Input(shape=raw_shape)
+        return keras.Model(inputs=[x],outputs=self.call(x))
+model = SimpleANN()
+```
+
+### TF DL layers 
+如上一节所述，tf.keras.layers 模块提供了一组可用于构建 TF 模型的层实现。 在本节中，我们将介绍在 PyTorch 中实现和训练模型部分中描述的同一组层。
+
+####  TF dense (linear) layers
+
+```python
+tf.keras.layers.Dense(units, activation=None, use_bias=True,
+kernel_initializer='glorot_uniform', bias_initializer='zeros',
+kernel_regularizer=None, bias_regularizer=None, activity_
+regularizer=None, kernel_constraint=None, bias_constraint=None,**kwargs)
+x = layers.Dense(128,name='layer2')(input)
+x = tf.keras.layers.Activation('relu')(x)
+
+```
+
+在某些情况下，您需要构建自定义层。 以下示例演示了如何通过继承tensorflow.keras.layers，使用基本的TF操作创建密集层。 层类：
+```python
+import tensorflow as tf 
+from tensorflow.keras.layers import Layer 
+class CustomDenseLayer(Layer):
+    def __init__(self,units=32):
+        super(SimpleDense,self).__init__()
+        self.units = units 
+    def build(self,input_shape):
+        w_init = tf.random_normal_initiliazr()
+        self.w = tf.Variable(name="kernel",
+                            initial_value=w_init(shape=(input_shape[-1], self.units),
+                            dtype='float32'),trainable=True)
+
+        b_init = tf.zeros_initializer()
+        self.b = tf.Variable(name='bias',initial_value = b_init(shape=(self.units),dtype='float32',),trainable =True)
+    def call(self,inputs):
+        return tf.matumul(inputs,self.w)+self.b 
+```
+
+####  TF pooling layers
+```python
+tf.keras.layers.MaxPool2D(
+                        pool_size=(2, 2), strides=None, padding='valid', data_
+                        format=None,
+                        kwargs)
+tf.keras.layers.AveragePooling2D(
+                        pool_size=(2, 2), strides=None, padding='valid', data_
+                        format=None,
+                        kwargs)
+                        
+```
+
+####  TF normalization layers 
+```python
+tf.keras.layers.BatchNormalization(
+                        axis=-1, momentum=0.99, epsilon=0.001, center=True,
+                        scale=True,
+                        beta_initializer='zeros', gamma_initializer='ones',
+                        moving_mean_initializer='zeros',
+                        moving_variance_initializer='ones', beta_regularizer=None,
+                        gamma_regularizer=None, beta_constraint=None, gamma_
+                        constraint=None, **kwargs)
+```
+
+#### TF dropout layers 
+#### TF convulition layers 
+#### TF recurrent  layers 
+
+
+## TF model trianing 
+> tensorflow_model.ipynb 
+>
+
+
+## Decomposing a complex,state-of-the-art model implementation
+### StyleGAN
+StyleGAN 是生成对抗网络 (GAN) 的一种变体，旨在从潜在代码（随机噪声向量）生成新图像。
+
+其架构可以分为三个元素：映射网络、生成器和鉴别器。 在较高层次上，映射网络和生成器协同工作，从一组随机值生成图像。 鉴别器在训练过程中指导生成器生成真实图像方面发挥着关键作用。 让我们仔细看看每个组件。
+
+### Implementation in Pytorch 
+不幸的是，NVIDIA 尚未分享 PyTorch 中 StyleGAN 的公开实现。 相反，他们发布了 StyleGAN2，它共享大部分相同的组件。 因此，我们将在 PyTorch 示例中使用 StyleGAN2 实现：https://github.com/NVlabs/stylegan2-ada-pytorch。
+
+
+所有网络组件都可以在training/network.py 下找到。 这三个组件的命名如上一节所述：MappingNetwork、Generator 和 Discriminator。
+
