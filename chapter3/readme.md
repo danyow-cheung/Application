@@ -238,3 +238,71 @@ input_tensor = torch.randn(L, N, H_in)
 h0 = torch.randn(D * num_layers, N, H_out)
 output_tensor, hn = rnn(input_tensor, h0)
 ```
+
+
+## Pytorch model training 
+> torch_model.ipynb
+
+伪代码
+### Loss function
+首先，我们将了解 PL 中可用的不同损失函数。 本节中的损失函数可以从 torch.nn 模块中找到。
+
+#### MES/L2 loss function
+```python
+loss = nn.MSELoss(reduction='mean')
+input = torch.randn(3,5,requires_grad=True)
+target = torch.randn(3,5)
+output = loss(input,target)
+
+```
+
+#### MAE/L1 loss function
+```python
+loss = nnL1Loss(reduction='mean')
+input = torch.randn(3,5,requires_grad=True)
+target = torch.randn(3,5)
+output = loss(input,target)
+
+```
+
+#### CE loss function
+```python
+loss = nn.CrossEntropyLoss(reduction='mean')
+input = torch.randn(3,5,requires_grad=True)
+target = torch.randn(3,dtype=torch.long).random_(5)
+output = loss(input,target)
+
+```
+
+#### BCE loss function
+```python
+loss = nn.BCEWithLogitsLoss(reduction='mean')
+input = torch.randn(3,requires_grad=True)
+target = torch.empty(3).random_(2)
+output = loss(input,target)
+```
+
+#### custome loss function
+```python
+def custome_mse_loss(output,target):
+    loss = torch.mean((output - target  )**2)
+    return loss 
+input = torch.randn(3,5,requires_grad=True)
+target = torch.randn(3,5)
+output = custome_mse_loss(input,target)
+
+```
+
+### Pytorch optimizers 
+
+#### Pytorch SGD optimizer
+```python
+optimizer = torch.optim.SGD(model.parameters(),lr=0.1,momentum=0.9,nesterov=True)
+```
+
+#### Pytorch Adam optimizer
+```python
+optimizer = torch.optim.Adam(model.parameters(), lr=0.1) 
+```
+
+## Implementing and training a model in TF 
