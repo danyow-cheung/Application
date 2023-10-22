@@ -476,3 +476,6 @@ StyleGAN 是生成对抗网络 (GAN) 的一种变体，旨在从潜在代码（�
 
 所有网络组件都可以在training/network.py 下找到。 这三个组件的命名如上一节所述：MappingNetwork、Generator 和 Discriminator。
 
+
+
+### Implementation in tensorflow 
