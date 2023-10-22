@@ -476,6 +476,29 @@ StyleGAN 是生成对抗网络 (GAN) 的一种变体，旨在从潜在代码（�
 
 所有网络组件都可以在training/network.py 下找到。 这三个组件的命名如上一节所述：MappingNetwork、Generator 和 Discriminator。
 
+#### Model training logic for Pytorch
+```python
+def training_loop(...):
+    .....
+    training_set_iterator = iter(torch.utils.data.DataLoader(dataset=training_set,sampler=training_set_sampler,batch_size = batch_size//num_gpus,**cuda_loader_kwargs))
+    loss = dunnlib.util.construct_class_by_name(device=device,**ddp_modules,**loss_kwargs)
+    while True:
+        # fetch training data
+        with torch.autograd.profiler.record_function('data_fetch'):
+            phase_real_img,phase_real_c = next(training_set_iterator)
+        # execute training phases 
+        for phase,phase_gen_z,phase_gen_c in zip(phase,all_gen_z,all_gen_c):
+            # accumulate gradients over multiple rounds 
+            for round_idx,(real_img,real_c,gen_z,gen_c) in enumerate(zip(phase_real_img,phase_real_c,phase_gen_z,phase_gen_c)):
+                loss.accumulate_gradients(phase=phase.name, real_
+                        img=real_img, real_c=real_c, gen_z=gen_z, gen_c=gen_c,
+                        sync=sync, gain=gain)
+        # update weights 
+        phase.module.requires_grad_(False)
+        with torch.autograd.profiler.record_function(phase.name+'_opt'):
+            phase.opt.step()
 
+
+```
 
 ### Implementation in tensorflow 
