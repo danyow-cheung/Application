@@ -140,3 +140,17 @@ def is_ai(research):
         return -1 
 df_gs_new = df_gs.withColumn("is_artificial_intelligence",\ is_ai(F.col("research_interest")))
 ```
+#### Exporting data 
+在本节中，我们将学习如何将DataFrame保存到S3存储桶中。在RDD的情况下，必须将其转换为要适当保存的DataFrame。
+```python
+s3_output_path = "s3a:\\my-bucket\output\vaccine_state_avg.csv"
+sample_data_frame.coalesce(1),write.mode('overwrite').option('header',True).option("quoteAll",True).csv(s3_output_path)
+```
+如果您想将DataFrame保存为JSON文件，可以使用write.JSON：
+```python
+s3_output_path = "s3a:\\my-bucket\output\vaccine_state_avg.csv"
+sample_data_frame.write.json(s3_output_path)
+```
+
+
+后面都是aws上面的操作了
