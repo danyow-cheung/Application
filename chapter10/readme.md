@@ -113,5 +113,70 @@ model_int8 = torch.quantization.conver(model_fp32_prepared)
 Unfortunately, PyTorch does not support weight sharing. Instead, we will provide a high-level description of a possible implementation. 
 
 ```python
+from torch.nn import Module
+class SampleModel(Module):
+    def __init__(self):
+        self.layer = '...'
+        self.weights_cluster = .. # cluster index for each weight 
+        self.weights_mapping = ...# mapping from a cluster index to a centroid value 
 
+    def forward(self,input):
+        if self.training:
+            output = self.layer(input)
+        else:
+            # update weights of the self.layer by reassigning each value based on self.weights_cluster and self.weights_mapping 
+            output = self.layer(input)
+            return output 
+    def cluster_weights(self):
+        # cluster weights of the layer 
+        # model
+model = SampleModel()
+# train model 
+....
+# perform weight sharing 
+model.cluster_weights()
+model.eval()
 ```
+
+
+## Network pruning -eliminating unnecessary connections within the network 
+网络修剪是一个优化过程，可以消除不必要的连接。该技术可以在训练后应用，但也可以在训练期间应用，在训练期间可以进一步减少模型精度的降低。
+### Network pruning in PyTorch
+PyTorch supports post-training network pruning through the torch.nn.utils.prune module. 
+```python
+
+# model is instantiated and trained 
+model = ''
+parameters_to_prune = (
+    (model.conv,'weight'),
+    (model.fc,'weight')
+)
+prune.global_unstructured(
+    parameters_to_prune,
+    pruning_method=prune.L1Unstructured, # L1-norm
+    amount=0.2
+)
+```
+
+## Knowledge distillation -- obtaining a smaller network by mimicking the prediction
+> 知识提炼，知識蒸餾
+
+The idea of knowledge distillation was first introduced in 2015 by Hinton et al. in their publication
+titled Distilling the Knowledge in a Neural Network
+
+在分類問題中，softmax通常認為是最後一步，但這個作者認為，其他置信度也是有用處的。
+
+基于这一想法，作者提出了一种将训练模型的知识转移到较小规模模型的技术：知识提取。
+
+
+自从这种技术首次出现以来，已经引入了许多变体。第一套
+变异源于知识的定义方式：基于反应的知识（网络输出）、基于特征的知识（中间表示）和基于关系的知识
+（层或数据样本之间的关系）。
+另一组变化集中在如何
+实现知识转移：离线提炼（从预先训练的学生模型中训练
+教师模型）、在线提炼（在两个模型都经过训练时共享知识）和自我提炼（在单个网络中共享知识）。我们相信，如果你是这样的话，Gou等人写的一篇题为《知识提炼：一项调查》的论文可以成为一个很好的起点
+愿意进一步探索这一领域。
+
+
+## Network Architecture Search - finding the most efficient network architecture 
+神经结构搜索（NAS）是为给定的问题找到层的最佳组织的过程。
